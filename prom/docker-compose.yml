@@ -1,4 +1,4 @@
-version: '2.1'
+version: '3.1'
 
 networks:
   monitor-net:
@@ -48,18 +48,20 @@ services:
       org.label-schema.group: "monitoring"
 
   nodeexporter:
-    image: prom/node-exporter:v0.17.0
+    image: prom/node-exporter
     container_name: nodeexporter
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
     command:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
-      - '--collector.textfile.directory=/var/lib/node_exporter/textfile_collector'
+      #- '--collector.textfile.directory=/var/lib/node_exporter/textfile_collector'
       - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.systemd'
     restart: unless-stopped
     expose:
       - 9100
@@ -69,13 +71,13 @@ services:
       org.label-schema.group: "monitoring"
 
   grafana:
-    image: grafana/grafana:6.0.1
+    image: grafana/grafana
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=p@$$w0rd
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
     restart: unless-stopped
     expose:
@@ -96,7 +98,7 @@ services:
       - ./caddy/:/etc/caddy/
     environment:
       - ADMIN_USER=admin
-      - ADMIN_PASSWORD=p@$$w0rd
+      - ADMIN_PASSWORD=admin
     restart: unless-stopped
     networks:
       - monitor-net
